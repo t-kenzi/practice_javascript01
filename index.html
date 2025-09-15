@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>買い物リスト表示アプリ（map / filter / reduce）</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
+          "Noto Sans JP", sans-serif;
+      }
+      body {
+        margin: 32px;
+        line-height: 1.6;
+      }
+      h1 {
+        margin: 0 0 8px;
+      }
+      .muted {
+        color: #666;
+        font-size: 0.95em;
+      }
+      .card {
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 16px;
+        max-width: 720px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      li {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px dashed #eee;
+      }
+      li:last-child {
+        border-bottom: none;
+      }
+      .price {
+        min-width: 6em;
+        text-align: right;
+      }
+      button {
+        border: 1px solid #ddd;
+        border-radius: 999px;
+        padding: 6px 12px;
+        cursor: pointer;
+        background: #fafafa;
+      }
+      button:hover {
+        background: #f0f0f0;
+      }
+      .total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 2px solid #222;
+        font-weight: 700;
+      }
+      .empty {
+        padding: 16px;
+        text-align: center;
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- HTML -->
+    <h1>🛒 買い物リスト表示アプリ</h1>
+    <p class="muted">
+      配列を <code>map</code> で描画し、<code>filter</code> で削除、<code
+        >reduce</code
+      >
+      で合計金額を算出します。
+    </p>
+
+    <div class="card">
+      <ul id="list"></ul>
+      <div id="empty" class="empty" hidden>カートは空です</div>
+      <div class="total">
+        <span>合計</span>
+        <span id="totalPrice">¥0</span>
+      </div>
+    </div>
+
+    <script>
+      // 初期データ（id, name, price）
+      let items = [
+        { id: 1, name: "牛乳 1L", price: 198 },
+        { id: 2, name: "食パン（6枚切り）", price: 158 },
+        { id: 3, name: "卵 10個", price: 298 },
+        { id: 4, name: "バナナ", price: 120 },
+        { id: 5, name: "ヨーグルト", price: 148 },
+      ];
+
+      const listEl = document.getElementById("list");
+      const totalEl = document.getElementById("totalPrice");
+      const emptyEl = document.getElementById("empty");
+      const jpy = new Intl.NumberFormat("ja-JP", {
+        style: "currency",
+        currency: "JPY",
+      });
+
+      // 描画関数：mapで<li>群を作成
+      function render() {
+        // 空状態の切り替え
+        emptyEl.hidden = items.length !== 0;
+
+        // mapでHTML文字列を生成
+        listEl.innerHTML = items
+          .map((item) => {
+            return `
+            <li>
+              <span>${escapeHTML(item.name)}</span>
+              <span class="price">${jpy.format(item.price)}</span>
+              <button data-id="${item.id}" aria-label="${
+              item.name
+            } を削除">削除</button>
+            </li>
+          `;
+          })
+          .join("");
+
+        // reduceで合計金額を算出
+        const total = items.reduce((sum, item) => sum + item.price, 0);
+        totalEl.textContent = jpy.format(total);
+      }
+
+      // 削除（イベント委譲）: filterで指定id以外を残す
+      listEl.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-id]");
+        if (!btn) return;
+        const id = Number(btn.dataset.id);
+        items = items.filter((item) => item.id !== id); // ← filter
+        render();
+      });
+
+      // XSS対策：最低限のエスケープ
+      function escapeHTML(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      // 初回描画
+      render();
+    </script>
+  </body>
+</html>
